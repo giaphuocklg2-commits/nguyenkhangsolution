@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCartStore } from "@/store/cart.store";
 import { formatCurrency } from "@/lib/utils";
+import { addVat, VAT_PERCENT } from "@/lib/pricing";
 import { ShoppingBag, User, Phone, Mail, MapPin, FileText, CheckCircle, QrCode, Copy } from "lucide-react";
 import { useToast } from "@/components/providers/toast-provider";
 import QRCode from "react-qr-code";
@@ -29,6 +30,61 @@ export default function CartPage() {
   const [loading, setLoading] = useState(false);
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
 
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponError, setCouponError] = useState("");
+
+  const subtotal = getTotalPrice();
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponError("");
+    try {
+      const res = await fetch("/api/v1/coupons/active");
+      const coupons = await res.json();
+      if (!Array.isArray(coupons)) {
+        setCouponError("Không thể xác thực mã");
+        return;
+      }
+      const found = coupons.find(
+        (c: any) => c.code.toUpperCase() === couponCode.trim().toUpperCase()
+      );
+      if (!found) {
+        setCouponError("Mã giảm giá không tồn tại hoặc đã hết hạn");
+        return;
+      }
+      if (found.minOrderValue && subtotal < found.minOrderValue) {
+        setCouponError(`Đơn hàng phải từ ${formatCurrency(found.minOrderValue)} trở lên`);
+        return;
+      }
+      setAppliedCoupon(found);
+      toast({ title: "✅ Áp dụng mã giảm giá thành công!", variant: "success" });
+    } catch {
+      setCouponError("Lỗi kết nối");
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+  };
+
+  let discountAmount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discountPercent) {
+      discountAmount = (subtotal * appliedCoupon.discountPercent) / 100;
+      if (appliedCoupon.maxDiscount && discountAmount > appliedCoupon.maxDiscount) {
+        discountAmount = appliedCoupon.maxDiscount;
+      }
+    } else if (appliedCoupon.discountAmount) {
+      discountAmount = appliedCoupon.discountAmount;
+    }
+  }
+
+  const finalTotal = Math.max(0, subtotal - discountAmount);
+
+
   const images = (item: (typeof items)[0]) => {
     try { return JSON.parse(item.image as any); } catch { return item.image; }
   };
@@ -51,6 +107,7 @@ export default function CartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          couponCode: appliedCoupon?.code,
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -295,7 +352,7 @@ export default function CartPage() {
                       <p className="text-sm font-medium text-gray-900 ">{item.name}</p>
                       <p className="text-xs text-gray-500 mt-0.5">Số lượng: {item.quantity}</p>
                       <p className="text-sm font-semibold text-yellow-600  mt-1">
-                        {formatCurrency((item.salePrice ?? item.price) * item.quantity)}
+                        {formatCurrency(addVat(item.salePrice ?? item.price) * item.quantity)}
                       </p>
                     </div>
                   </div>
@@ -318,26 +375,78 @@ export default function CartPage() {
                       {item.name} x{item.quantity}
                     </span>
                     <span className="font-medium text-gray-900  flex-shrink-0">
-                      {formatCurrency((item.salePrice ?? item.price) * item.quantity)}
+                      {formatCurrency(addVat(item.salePrice ?? item.price) * item.quantity)}
                     </span>
                   </div>
                 ))}
               </div>
 
+              {/* Coupon Code Section */}
+              <div className="mb-5 pb-5 border-b border-gray-100">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Mã giảm giá
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Nhập mã (ví dụ: DISCOUNT10)"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    disabled={!!appliedCoupon}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono uppercase bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-60"
+                  />
+                  {appliedCoupon ? (
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      className="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold transition-colors"
+                    >
+                      Xóa
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={applyCoupon}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors"
+                    >
+                      Áp dụng
+                    </button>
+                  )}
+                </div>
+                {couponError && <p className="text-xs text-red-500 font-medium mt-1">{couponError}</p>}
+                {appliedCoupon && (
+                  <p className="text-xs text-green-600 font-bold mt-1.5 flex items-center gap-1">
+                    ✓ Đã áp dụng mã {appliedCoupon.code} (-{formatCurrency(discountAmount)})
+                  </p>
+                )}
+              </div>
+
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-600 ">Tạm tính</span>
-                <span className="font-medium text-gray-900 ">
-                  {formatCurrency(getTotalPrice())}
+                <span className="text-gray-600">Tạm tính</span>
+                <span className="font-medium text-gray-900">
+                  {formatCurrency(subtotal)}
                 </span>
               </div>
-              <div className="flex justify-between items-center mb-5 pb-5 border-b border-gray-100 ">
-                <span className="text-gray-600 ">Phí vận chuyển</span>
-                <span className="text-green-600  font-medium">Thỏa thuận</span>
+              <div className="flex justify-between items-center mb-2 text-xs text-gray-500">
+                <span>Thuế VAT</span>
+                <span>Đã gồm {VAT_PERCENT}%</span>
+              </div>
+
+              {discountAmount > 0 && (
+                <div className="flex justify-between items-center mb-2 text-green-600 font-medium text-sm">
+                  <span>Giảm giá</span>
+                  <span>-{formatCurrency(discountAmount)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center mb-5 pb-5 border-b border-gray-100">
+                <span className="text-gray-600">Phí vận chuyển</span>
+                <span className="text-green-600 font-medium">Thỏa thuận</span>
               </div>
               <div className="flex justify-between items-center mb-6">
-                <span className="font-semibold text-gray-900 ">Tổng cộng</span>
-                <span className="text-xl font-bold text-yellow-600 ">
-                  {formatCurrency(getTotalPrice())}
+                <span className="font-semibold text-gray-900">Tổng cộng</span>
+                <span className="text-xl font-bold text-yellow-600">
+                  {formatCurrency(finalTotal)}
                 </span>
               </div>
 

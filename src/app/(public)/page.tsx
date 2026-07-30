@@ -5,6 +5,17 @@ import { HomeFeatured } from "@/components/home/home-featured";
 import { HomeServices } from "@/components/home/home-services";
 import { HomeStats } from "@/components/home/home-stats";
 import { HomeBanner } from "@/components/home/home-banner";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: {
+    url: "/",
+    type: "website",
+    locale: "vi_VN",
+    siteName: "NKS Electric",
+  },
+};
 
 export const dynamic = "force-dynamic";
 

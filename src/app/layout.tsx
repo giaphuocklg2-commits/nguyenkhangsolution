@@ -17,6 +17,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://xaywebgiare.shop"),
   title: {
     default: "NKS Electric - Đèn Điện, NLMT, Inverter, Pin Lưu Trữ",
     template: "%s | NKS Electric",
@@ -34,18 +35,25 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "NKS Electric" }],
   creator: "NKS Electric",
+  publisher: "NKS Electric",
   openGraph: {
     type: "website",
     locale: "vi_VN",
-    url: "http://localhost:3000",
+    url: "https://xaywebgiare.shop",
     siteName: "NKS Electric",
     title: "NKS Electric - Đèn Điện, NLMT, Inverter, Pin Lưu Trữ",
     description:
       "Chuyên cung cấp đèn điện, năng lượng mặt trời và dịch vụ lắp đặt chuyên nghiệp",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "NKS Electric - Đèn Điện, NLMT, Inverter, Pin Lưu Trữ",
+    description: "Chuyên cung cấp đèn điện, năng lượng mặt trời và dịch vụ lắp đặt chuyên nghiệp",
+  },
   robots: {
     index: true,
     follow: true,
+    googleBot: { index: true, follow: true },
   },
 };
 

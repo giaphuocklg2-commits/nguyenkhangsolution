@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { addVat } from "@/lib/pricing";
 
 export interface CartItem {
   id: string;
@@ -86,7 +87,7 @@ export const useCartStore = create<CartStore>()(
       getTotalPrice: () => {
         return get().items.reduce((total, item) => {
           const price = item.salePrice ?? item.price;
-          return total + price * item.quantity;
+          return total + addVat(price) * item.quantity;
         }, 0);
       },
     }),

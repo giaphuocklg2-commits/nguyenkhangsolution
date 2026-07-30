@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/products/product-card";
+import { removeVat } from "@/lib/pricing";
 
 interface SearchParams {
   category?: string;
@@ -22,10 +23,10 @@ export async function ProductsGrid({ searchParams }: { searchParams: SearchParam
     ];
   }
   if (searchParams.minPrice) {
-    where.price = { ...(where.price ?? {}), gte: parseFloat(searchParams.minPrice) };
+    where.price = { ...(where.price ?? {}), gte: removeVat(parseFloat(searchParams.minPrice)) };
   }
   if (searchParams.maxPrice) {
-    where.price = { ...(where.price ?? {}), lte: parseFloat(searchParams.maxPrice) };
+    where.price = { ...(where.price ?? {}), lte: removeVat(parseFloat(searchParams.maxPrice)) };
   }
 
   const [products, total] = await Promise.all([

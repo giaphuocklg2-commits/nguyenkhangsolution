@@ -14,6 +14,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { addVat, VAT_PERCENT } from "@/lib/pricing";
 
 export function CartSidebar() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, getTotalPrice, getTotalItems } =
@@ -133,7 +134,7 @@ export function CartSidebar() {
                     {item.name}
                   </Link>
                   <p className="text-yellow-600  font-semibold text-sm mt-1">
-                    {formatCurrency(item.salePrice ?? item.price)}
+                    {formatCurrency(addVat(item.salePrice ?? item.price))}
                   </p>
 
                   {/* Quantity */}
@@ -187,6 +188,9 @@ export function CartSidebar() {
                 {formatCurrency(getTotalPrice())}
               </span>
             </div>
+            <p className="text-xs text-gray-500  text-center">
+              Giá sản phẩm đã bao gồm VAT {VAT_PERCENT}%
+            </p>
             <p className="text-xs text-gray-500  text-center">
               * Giá chưa bao gồm phí vận chuyển. Seller sẽ liên hệ xác nhận.
             </p>

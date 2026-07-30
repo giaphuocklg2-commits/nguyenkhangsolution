@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useCartStore } from "@/store/cart.store";
 import { useToast } from "@/components/providers/toast-provider";
 import { formatCurrency } from "@/lib/utils";
+import { addVat, VAT_PERCENT } from "@/lib/pricing";
 import { ProductCard } from "@/components/products/product-card";
 import Link from "next/link";
 import {
@@ -68,14 +69,14 @@ export function ProductDetailClient({
     try { return JSON.parse(product.images) as string[]; } catch { return []; }
   })();
 
-  const currentPrice = product.salePrice ?? product.price;
-  const discount = product.salePrice
-    ? Math.round(((product.price - product.salePrice) / product.price) * 100)
-    : 0;
   const hasSale =
     product.salePrice !== null &&
     product.salePrice !== undefined &&
     (!product.saleEndDate || new Date(product.saleEndDate) > new Date());
+  const currentPrice = hasSale ? product.salePrice! : product.price;
+  const discount = hasSale
+    ? Math.round(((product.price - product.salePrice!) / product.price) * 100)
+    : 0;
 
   function handleAddToCart() {
     if (product.stock === 0) return;
@@ -84,7 +85,7 @@ export function ProductDetailClient({
       productId: product.id,
       name: product.name,
       price: product.price,
-      salePrice: product.salePrice,
+      salePrice: hasSale ? product.salePrice : null,
       image: images[0] ?? "",
       slug: product.slug,
       quantity,
@@ -173,14 +174,15 @@ export function ProductDetailClient({
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
               <span className="text-3xl font-bold text-[#1D4ED8]">
-                {formatCurrency(currentPrice)}
+                {formatCurrency(addVat(currentPrice))}
               </span>
               {hasSale && (
                 <span className="text-lg text-gray-400 line-through">
-                  {formatCurrency(product.price)}
+                  {formatCurrency(addVat(product.price))}
                 </span>
               )}
             </div>
+            <p className="-mt-4 mb-6 text-xs text-gray-500">Giá đã bao gồm VAT {VAT_PERCENT}%</p>
 
             {/* Stock */}
             <div className="flex items-center gap-2 mb-6">

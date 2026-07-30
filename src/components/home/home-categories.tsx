@@ -1,7 +1,10 @@
+"use client";
+
+import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-interface Category {
+export interface Category {
   id: string;
   name: string;
   slug: string;
@@ -9,52 +12,90 @@ interface Category {
   image?: string | null;
 }
 
+export interface HomeCategoriesProps {
+  categories: Category[];
+}
+
 const categoryIcons: Record<string, string> = {
   "den-dien-dan-dung": "💡",
   "den-hang-hai": "🚢",
   "nang-luong-mat-troi": "☀️",
-  inverter: "⚡",
+  "inverter": "⚡",
   "pin-luu-tru": "🔋",
   "dich-vu-lap-dat": "🔧",
 };
 
-export function HomeCategories({ categories }: { categories: Category[] }) {
-  return (
-    <section className="py-8 bg-white border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-8">
-          <h2 className="font-heading text-2xl md:text-3xl font-black text-gray-900 uppercase">
-            Danh Mục Sản Phẩm
-          </h2>
-          <div className="w-16 h-1 bg-[#1D4ED8] mx-auto mt-2 rounded-full" />
-        </div>
+const categoryColors: Record<string, { from: string; to: string; shadow: string }> = {
+  "den-dien-dan-dung": { from: "from-yellow-400", to: "to-orange-500", shadow: "shadow-orange-200" },
+  "den-hang-hai":      { from: "from-blue-500", to: "to-cyan-600", shadow: "shadow-blue-200" },
+  "nang-luong-mat-troi": { from: "from-amber-400", to: "to-yellow-600", shadow: "shadow-yellow-200" },
+  "inverter":          { from: "from-violet-500", to: "to-purple-700", shadow: "shadow-purple-200" },
+  "pin-luu-tru":       { from: "from-green-400", to: "to-emerald-600", shadow: "shadow-green-200" },
+  "dich-vu-lap-dat":   { from: "from-slate-500", to: "to-blue-700", shadow: "shadow-slate-200" },
+};
 
-        <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-10">
-          {categories.map((category) => (
+export const HomeCategories: React.FC<HomeCategoriesProps> = ({ categories }) => {
+  if (categories.length === 0) return null;
+
+  return (
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      {/* Section Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-blue-500 to-blue-700" />
+            <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Danh Mục</span>
+          </div>
+          <h2 className="text-2xl font-black text-slate-900">
+            Sản Phẩm <span className="gradient-text-blue">Nổi Bật</span>
+          </h2>
+        </div>
+        <Link
+          href="/products"
+          className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700 group"
+        >
+          Xem tất cả
+          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
+      </div>
+
+      {/* Category Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        {categories.map((cat, index) => {
+          const icon = categoryIcons[cat.slug] || "📦";
+          const color = categoryColors[cat.slug] || { from: "from-blue-500", to: "to-blue-700", shadow: "shadow-blue-200" };
+
+          return (
             <Link
-              key={category.id}
-              href={`/products?category=${category.slug}`}
-              className="group flex flex-col items-center w-[110px] md:w-[130px]"
+              key={cat.id}
+              href={`/products?category=${cat.slug}`}
+              className="group flex flex-col items-center gap-3 bg-white rounded-2xl p-4 border border-slate-200/70 hover:border-blue-200 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+              style={{ animationDelay: `${index * 60}ms` }}
             >
-              <div className="relative w-20 h-20 md:w-24 md:h-24 mb-4">
-                {/* 3D Pedestal Base */}
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-6 md:w-20 md:h-8 bg-gray-200 rounded-[100%] shadow-[0_5px_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)] transition-shadow duration-300" />
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-14 h-5 md:w-16 md:h-6 bg-white rounded-[100%] border border-gray-100" />
-                
-                {/* Icon Container */}
-                <div className="absolute inset-0 bg-white rounded-full flex items-center justify-center border-4 border-gray-50 shadow-sm group-hover:-translate-y-2 group-hover:border-blue-100 transition-all duration-300 z-10">
-                  <span className="text-3xl md:text-4xl group-hover:scale-110 transition-transform duration-300">
-                    {categoryIcons[category.slug] ?? "📦"}
-                  </span>
-                </div>
+              {/* Icon circle */}
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${color.from} ${color.to} flex items-center justify-center text-2xl shadow-lg ${color.shadow} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                {icon}
               </div>
-              <span className="font-semibold text-[13px] md:text-sm text-gray-700 text-center leading-tight group-hover:text-[#1D4ED8] transition-colors line-clamp-2">
-                {category.name}
+              {/* Name */}
+              <span className="text-xs font-bold text-slate-700 text-center leading-snug group-hover:text-blue-700 transition-colors">
+                {cat.name}
               </span>
             </Link>
-          ))}
-        </div>
+          );
+        })}
+      </div>
+
+      {/* Mobile "View All" */}
+      <div className="mt-4 text-center sm:hidden">
+        <Link
+          href="/products"
+          className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:text-blue-700"
+        >
+          Xem tất cả danh mục <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
     </section>
   );
-}
+};
+
+export default HomeCategories;

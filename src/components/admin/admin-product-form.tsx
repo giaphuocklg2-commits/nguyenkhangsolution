@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Image as ImageIcon, Trash2, Plus, Upload, Link as LinkIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/components/providers/toast-provider";
 import Link from "next/link";
+import { addVat, VAT_PERCENT } from "@/lib/pricing";
 
 export default function AdminProductForm({ productId }: { productId?: string }) {
   const router = useRouter();
@@ -223,7 +224,7 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Giá niêm yết (VNĐ) <span className="text-red-500">*</span>
+                    Giá niêm yết chưa VAT (VNĐ) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -233,10 +234,15 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 font-bold"
                   />
+                  {form.price && (
+                    <p className="mt-1 text-[11px] text-blue-600">
+                      Giá bán gồm VAT {VAT_PERCENT}%: {addVat(Number(form.price)).toLocaleString("vi-VN")} ₫
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Giá khuyến mãi (tùy chọn)
+                    Giá khuyến mãi chưa VAT (tùy chọn)
                   </label>
                   <input
                     type="number"
@@ -245,6 +251,11 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
                     onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 font-bold text-red-600"
                   />
+                  {form.salePrice && (
+                    <p className="mt-1 text-[11px] text-red-600">
+                      Giá bán gồm VAT {VAT_PERCENT}%: {addVat(Number(form.salePrice)).toLocaleString("vi-VN")} ₫
+                    </p>
+                  )}
                 </div>
               </div>
 

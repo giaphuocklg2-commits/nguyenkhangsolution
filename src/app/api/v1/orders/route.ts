@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateOrderCode, formatCurrency } from "@/lib/utils";
 import { createSystemNotification } from "@/lib/announcement-helper";
+import { addVat } from "@/lib/pricing";
 
 // POST /api/v1/orders
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { customerName, phone, email, address, notes, items } = body;
+    const { customerName, phone, email, address, notes, items, couponCode } = body;
 
     if (!customerName || !phone || !address || !items?.length) {
       return NextResponse.json(
@@ -34,11 +35,12 @@ export async function POST(req: NextRequest) {
 
     const orderItems = items.map((item: any) => {
       const product = products.find((p) => p.id === item.productId)!;
-      const price =
+      const basePrice =
         product.salePrice &&
         (!product.saleEndDate || new Date(product.saleEndDate) > new Date())
           ? product.salePrice
           : product.price;
+      const price = addVat(basePrice);
       totalAmount += price * item.quantity;
       return {
         productId: item.productId,
@@ -47,6 +49,45 @@ export async function POST(req: NextRequest) {
         price,
       };
     });
+
+    if (couponCode) {
+      const now = new Date();
+      const coupon = await prisma.coupon.findFirst({
+        where: {
+          code: String(couponCode).trim().toUpperCase(),
+          isActive: true,
+          OR: [{ startDate: null }, { startDate: { lte: now } }],
+          AND: [{ OR: [{ endDate: null }, { endDate: { gte: now } }] }],
+        },
+      });
+
+      if (!coupon) {
+        return NextResponse.json(
+          { success: false, error: "Mã giảm giá không hợp lệ hoặc đã hết hạn" },
+          { status: 400 }
+        );
+      }
+
+      if (coupon.minOrderValue && totalAmount < coupon.minOrderValue) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Đơn hàng tối thiểu ${formatCurrency(coupon.minOrderValue)} để dùng mã này`,
+          },
+          { status: 400 }
+        );
+      }
+
+      let discount = coupon.discountPercent
+        ? (totalAmount * coupon.discountPercent) / 100
+        : coupon.discountAmount || 0;
+
+      if (coupon.maxDiscount) {
+        discount = Math.min(discount, coupon.maxDiscount);
+      }
+
+      totalAmount = Math.max(0, Math.round(totalAmount - discount));
+    }
 
     const order = await prisma.order.create({
       data: {

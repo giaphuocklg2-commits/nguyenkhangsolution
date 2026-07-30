@@ -1,8 +1,8 @@
 "use client";
 
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
 import {
   ShoppingCart,
   Menu,
@@ -26,7 +26,7 @@ const navLinks = [
   { href: "/order/track", label: "Tra cứu đơn hàng" },
 ];
 
-export function Header() {
+export const Header: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -49,11 +49,11 @@ export function Header() {
 
   const totalItems = mounted ? getTotalItems() : 0;
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
-  };
+  }, [searchQuery, router]);
 
   return (
     <>
@@ -257,4 +257,6 @@ export function Header() {
       <CartSidebar />
     </>
   );
-}
+};
+
+export default Header;
