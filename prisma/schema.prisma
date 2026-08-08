@@ -52,6 +52,11 @@ model Order {
   address          String
   notes            String?
   status           String            @default("PENDING")
+  paymentStatus    String            @default("UNPAID")
+  paymentMethod    String?
+  zmpOrderId       String?           @unique
+  paymentTransId   String?           @unique
+  paidAt           DateTime?
   totalAmount      Float
   items            OrderItem[]
   trackingHistory  OrderTracking[]
