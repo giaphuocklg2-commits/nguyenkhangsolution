@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { generateOrderCode, formatCurrency } from "@/lib/utils";
 import { createSystemNotification } from "@/lib/announcement-helper";
 import { addVat } from "@/lib/pricing";
+import { createCheckoutMac } from "@/lib/zalo-checkout";
 
 // POST /api/v1/orders
 export async function POST(req: NextRequest) {
@@ -116,6 +117,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // The server is the source of truth for prices and signs the exact payload
+    // passed to Checkout SDK. The private key never reaches the Mini App.
+    const checkoutParams = {
+      amount: Math.round(order.totalAmount),
+      desc: `Thanh toan don hang ${order.orderCode}`,
+      item: order.items.map((item) => ({
+        id: item.productId,
+        name: item.name,
+        amount: Math.round(item.price * item.quantity),
+        quantity: item.quantity,
+      })),
+      extradata: JSON.stringify({ orderId: order.id, orderCode: order.orderCode }),
+    };
+
     // Auto-create COMPANY_BELL notification for Admin
     await createSystemNotification({
       title: `Đơn Hàng Mới #${order.orderCode}`,
@@ -134,6 +149,10 @@ export async function POST(req: NextRequest) {
           totalAmount: order.totalAmount,
           status: order.status,
           trackingUrl: `/order/${order.qrToken}`,
+          checkout: {
+            ...checkoutParams,
+            mac: createCheckoutMac(checkoutParams),
+          },
           message:
             "Đặt hàng thành công! Seller sẽ liên hệ bạn để xác nhận đơn.",
         },
